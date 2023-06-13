@@ -50,5 +50,5 @@ def tarjans_algorithm(graph):
 if __name__ == "__main__":
     strongly_connected_components = np.array(tarjans_algorithm(df_adjacency_list))
     # print all the elements in the array whose length is greater than 1
-    print(strongly_connected_components)
-    print([x for x in strongly_connected_components if len(x) > 1])
+    # print(strongly_connected_components)
+    print("len of mult connection comps: ", len(set([x for x in strongly_connected_components if len(x) > 1])))
