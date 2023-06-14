@@ -5,6 +5,7 @@
 #include <stack>
 #include <fstream>
 #include <sstream>
+#include <set>
 using namespace std;
 
 unordered_map < int, unordered_set < int > > g;
@@ -49,7 +50,7 @@ int main() {
     ifstream inputFile("adjacency_list.txt");
 
     // output file for writing
-    ofstream outputFile("scc.txt");
+    ofstream outputFile("scc_1.txt");
 
     // Check if the file opened successfully
     if (!inputFile) {
@@ -59,22 +60,32 @@ int main() {
 
     int u, v, weight, height;
     string u_str, v_str, weight_str, height_str;
-    // int counter = 0;
+    set<int> unique_nodes;
+    int na_counter = 0;
+    int line_counter = 0;
     while (inputFile >> u_str >> v_str >> weight_str >> height_str) {
         if (u_str == "<NA>" && v_str != "<NA>") {
+          na_counter++;
           stringstream(v_str) >> v;
           edges.push_back(make_pair(v, v));
+          unique_nodes.insert(v);
         } else if (u_str != "<NA>" && v_str == "<NA>") {
+          na_counter++;
           stringstream(u_str) >> u;
+          unique_nodes.insert(u);
           edges.push_back(make_pair(u, u));
         } else {
           stringstream(u_str) >> u;
           stringstream(v_str) >> v;
           edges.push_back(make_pair(u, v));
+          unique_nodes.insert(u);
+          unique_nodes.insert(v);
         }
-        // cout << "Counter: " << counter << endl;
-        // counter++;
+        line_counter++;
     }
+    cout << "Number of NAs found: " << na_counter << endl;
+    cout << "Line counter: " << line_counter << endl;
+    cout << "Number of unique nodes: " << unique_nodes.size() << endl;
 
     // Close the file
     inputFile.close();
