@@ -3,22 +3,23 @@
 #include <unordered_set>
 #include <iostream>
 #include <stack>
+#include <fstream>
 using namespace std;
 
-unordered_map<int, unordered_set<int> > g;
-unordered_map<int, int> d, low, scc;
-unordered_map<int, bool> stacked;
-stack<int> s;
+unordered_map < int, unordered_set < int > > g;
+unordered_map < int, int > d, low, scc;
+unordered_map < int, bool > stacked;
+stack < int > s;
 int ticks, current_scc;
 
 void tarjan(int u) {
   d[u] = low[u] = ticks++;
   s.push(u);
   stacked[u] = true;
-  
-  const unordered_set<int>& out = g[u];
-  
-  for (const int& v : out) {
+
+  const unordered_set < int > & out = g[u];
+
+  for (const int & v: out) {
     if (d[v] == 0) {
       tarjan(v);
       low[u] = min(low[u], low[v]);
@@ -26,7 +27,7 @@ void tarjan(int u) {
       low[u] = min(low[u], low[v]);
     }
   }
-  
+
   if (d[u] == low[u]) {
     int v;
     do {
@@ -35,20 +36,37 @@ void tarjan(int u) {
       stacked[v] = false;
       scc[v] = current_scc;
     } while (u != v);
-    
+
     current_scc++;
   }
 }
 
 int main() {
-  // Sample data
-  pair<int, int> edges[] = {
-    make_pair(1, 2),
-    make_pair(2, 1),
-    };
+    vector<pair<int, int> > edges;
 
+    // Open the text file for reading
+    ifstream inputFile("adj_list_dummy.txt");
 
-  // Construct the graph
+    // Check if the file opened successfully
+    if (!inputFile) {
+        cout << "Error opening the file." << endl;
+        return 1;
+    }
+
+    int u, v, weight, height;
+    while (inputFile >> u >> v >> weight >> height) {
+        edges.push_back(make_pair(u, v));
+    }
+
+    // Close the file
+    inputFile.close();
+
+    // Print the edges
+    for (const auto& edge : edges) {
+        cout << "Node " << edge.first << " -> " << "Node " << edge.second << endl;
+    }
+
+    // Construct the graph
   for (const auto& edge : edges) {
     int u = edge.first;
     int v = edge.second;
