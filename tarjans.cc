@@ -50,7 +50,7 @@ int main() {
     ifstream inputFile("adjacency_list.txt");
 
     // output file for writing
-    ofstream outputFile("scc_1.txt");
+    ofstream outputFile("scc3.txt");
 
     // Check if the file opened successfully
     if (!inputFile) {
@@ -102,6 +102,13 @@ int main() {
     g[u].insert(v);
   }
 
+  // Add isolated nodes to the processing maps
+  for (const int& node : unique_nodes) {
+    if (d[node] == 0) {
+        tarjan(node);
+    }
+  }
+
   // Initialize variables
   ticks = 1;
   current_scc = 1;
@@ -116,12 +123,15 @@ int main() {
 
   // Print the strongly connected components
   // cout << "Strongly Connected Components:\n";
+  int outputNodes = 0;
   for (const auto& node : scc) {
+    outputNodes++;
     int u = node.first;
     int component = node.second;
     // cout << "Node " << u << " belongs to SCC " << component << "\n";
     outputFile << "Node " << u << " belongs to SCC " << component << "\n";
   }
+  cout << "Number of connected nodes: " << outputNodes << endl;
 
   return 0;
 }
