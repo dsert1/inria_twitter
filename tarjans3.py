@@ -3,6 +3,9 @@ import numpy as np
 import argparse
 from tqdm import tqdm
 from collections import defaultdict
+import sys
+
+sys.setrecursionlimit(10_000)  # Set the maximum recursion depth to 5000
 
 def construct_graph(df):
     edges = []
@@ -87,8 +90,8 @@ if __name__ == '__main__':
         if u not in g:
             g[u] = []
         g[u].append(v)
-    print("Edges: ", edges)
-    print("g: ", g)
+    # print("Edges: ", edges)
+    # print("g: ", g)
 
     sccs = tarjan(g)
     sccs.sort(key=lambda x: len(x), reverse=True)
