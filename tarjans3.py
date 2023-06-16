@@ -1,12 +1,11 @@
 import pandas as pd
-import numpy as np
 import argparse
 from collections import defaultdict
-import sys
 from tarjan import tarjan
-
+import time
 
 if __name__ == '__main__':
+    start = time.time()
     print("Starting...")
     parser = argparse.ArgumentParser(description='Tarjan\'s Algorithm')
     parser.add_argument('-i', '--input', type=str, required=True)
@@ -16,18 +15,15 @@ if __name__ == '__main__':
 
 
     # Read input file as parquet
-    print("Reading input file...")
+    print("Loading input file...")
     df = pd.read_parquet(input_file_path, columns=["addr_id1", "addr_id2"] , engine='pyarrow', dtype_backend='pyarrow')
-    print("Finished reading input file.")
-    print("Constructing graph...")
-    print("Finished constructing graph.")
+    print("Finished loading input file.")
 
-
-    print("Reading edges...")
     graph = defaultdict(set)
-    counter = 0
     unique_nodes = set()
+    counter = 0
     NA_counter = 0
+    print("Constructing graph...")
     for u, v in df.itertuples(index=False):
         counter += 1
         if counter % 1_000_000 == 0:
@@ -52,15 +48,14 @@ if __name__ == '__main__':
             unique_nodes.add(v)
             graph[u].add(v)
 
-        
-    print("Finished reading edges.")
+
+    
+    print("Finished constructing graph.")
 
     print("Running Tarjan's Algorithm...")
     sccs = tarjan(graph)
-    print(sccs)
+    # print(sccs)
     print("Finished running Tarjan's Algorithm.")
-    # sccs.sort(key=lambda x: len(x), reverse=True)
-
     output_file = open(f"{input_file_path}_summary_stats.txt", "w")
 
     output_file.write("Summary Statistics:\n")
@@ -71,20 +66,15 @@ if __name__ == '__main__':
     one_member_sccs = 0
     counter = 0
     for scc in sccs:
-        counter += 1
         if counter % 1_000_000 == 0:
             print("counter: ", counter)
-        if len(scc) > 1:
-            output_file.write(f"SCC ({scc[0]}) has {len(scc)} members\n")
-        else:
-            one_member_sccs += 1
+        output_file.write(f"Members of SCC {counter}: {scc}\n")
+        counter += 1
     print("Finished writing SCCs to file.")
-
-    # Count the number of SCCs with 1 member
-    if one_member_sccs > 0:
-        output_file.write(f"{one_member_sccs} SCCs with 1 member\n")
     
     print(f"Finished writing to {output_file.name}")
+    end = time.time()
+    print(f"Took {end - start} seconds to run Tarjan's Algorithm.")
 
         
 
