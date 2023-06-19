@@ -24,6 +24,7 @@ if __name__ == '__main__':
     counter = 0
     NA_counter = 0
     print("Constructing graph...")
+    graph_construction_start = time.time()
     for u, v in df.itertuples(index=False):
         counter += 1
         if counter % 1_000_000 == 0:
@@ -48,12 +49,16 @@ if __name__ == '__main__':
             unique_nodes.add(v)
             graph[u].add(v)
 
-
+    graph_construction_end = time.time()
+    print(f"Took {graph_construction_end - graph_construction_start} seconds to construct graph.")
     
     print("Finished constructing graph.")
 
     print("Running Tarjan's Algorithm...")
+    tarjans_start = time.time()
     sccs = tarjan(graph)
+    tarjans_end = time.time()
+    print(f"Took {tarjans_end - tarjans_start} seconds to run Tarjan's Algorithm.")
     # print(sccs)
     print("Finished running Tarjan's Algorithm.")
     output_file = open(f"{input_file_path}_summary_stats.txt", "w")
@@ -65,14 +70,19 @@ if __name__ == '__main__':
     # Output the SCCs with more than 1 member
     one_member_sccs = 0
     counter = 0
+    io_start = time.time()
     for scc in sccs:
-        if counter % 1_000_000 == 0:
+        if counter % 1000000 == 0:
             print("counter: ", counter)
         output_file.write(f"Members of SCC {counter}: {scc}\n")
         counter += 1
+    io_end = time.time()
+    print(f"Took {io_end - io_start} seconds to write SCCs to file.")
     print("Finished writing SCCs to file.")
     
+
     print(f"Finished writing to {output_file.name}")
+    output_file.close()
     end = time.time()
     print(f"Took {end - start} seconds to run Tarjan's Algorithm.")
 
