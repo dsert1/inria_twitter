@@ -8,13 +8,16 @@ from numba.typed import Dict, List
 from numba.types import int64
 import numpy as np
 
+SENTINEL = -1.0
+SMALL_VALUE = 0.01
+
 @njit
 def tarjan(graph):
-    S = List([-1.0])
-    S_set = set([-1.0])
-    index = {-1.0:-1.0}
-    lowlink = {-1.0:-1.0}
-    temp0 = List([-1.0])
+    S = List([SENTINEL])
+    S_set = set([SENTINEL])
+    index = {SENTINEL:SENTINEL}
+    lowlink = {SENTINEL:SENTINEL}
+    temp0 = List([SENTINEL])
     ret = List([temp0])
 
     for v in graph:
@@ -36,7 +39,7 @@ def visit(v, index, lowlink, S, S_set, ret, graph):
             elif w in S_set:
                 lowlink[v] = min(lowlink[v], index[w])
     if lowlink[v] == index[v]:
-        scc = List([-1.0])
+        scc = List([SENTINEL])
         w = None
         while v != w:
             w = S.pop()
@@ -106,8 +109,10 @@ def write_to_file(output_path, unique_nodes, sccs):
         for scc in sccs:
             # ******** LOGGING *********
             if counter % 10_000_000 == 0:
-                print(f"counter: {counter} out of {len(scc)}. {round(counter / len(scc), 5)}% complete.")
+                print(f"counter: {counter} out of {len(scc)}. {counter / len(scc)}% complete.")
             # **************************
+            if len(scc) == 1 and abs(scc[0] - SENTINEL) < SMALL_VALUE: # if scc is [-1.0]
+                continue
             buffer.append(f"Members of SCC {counter}: {scc}\n")
             if counter % batch_size == 0:
                 output_file.write(f"Members of SCC {counter}: {scc}\n")
@@ -132,7 +137,7 @@ if __name__ == '__main__':
     start = time.time()
     print("Starting...")
     print("Loading input file...")
-    df = pd.read_parquet("adj_list_dummy_3.parquet", columns=["addr_id1", "addr_id2"] , engine='pyarrow', dtype_backend='pyarrow')
+    df = pd.read_parquet("adj_list_dummy_2.parquet", columns=["addr_id1", "addr_id2"] , engine='pyarrow', dtype_backend='pyarrow')
     print("Finished loading input file.")
 
     output_file = "output.txt"
