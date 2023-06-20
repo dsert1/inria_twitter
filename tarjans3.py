@@ -1,37 +1,42 @@
 import pandas as pd
-from collections import defaultdict
 # from tarjan import tarjan
 import time
 import os
-import numba as nb
+from numba import njit
+from numba.core import types
+from numba.typed import Dict, List
+from numba.types import int64
+import numpy as np
 
-# @nb.njit
+@njit
 def tarjan(graph):
-    S = []
-    S_set = set()
-    index = {}
-    lowlink = {}
-    ret = []
+    S = List([-1.0])
+    S_set = set([-1.0])
+    index = {-1.0:-1.0}
+    lowlink = {-1.0:-1.0}
+    temp0 = List([-1.0])
+    ret = List([temp0])
 
     for v in graph:
         if v not in index:
             visit(v, index, lowlink, S, S_set, ret, graph)
     return ret
 
-# @nb.njit
+@njit
 def visit(v, index, lowlink, S, S_set, ret, graph):
     index[v] = len(index)
     lowlink[v] = index[v]
     S.append(v)
     S_set.add(v)
-    for w in graph.get(v, ()):
-        if w not in index:
-            visit(w, index, lowlink, S, S_set, ret, graph)
-            lowlink[v] = min(lowlink[w], lowlink[v])
-        elif w in S_set:
-            lowlink[v] = min(lowlink[v], index[w])
+    if v in graph:
+        for w in graph[v]:
+            if w not in index:
+                visit(w, index, lowlink, S, S_set, ret, graph)
+                lowlink[v] = min(lowlink[w], lowlink[v])
+            elif w in S_set:
+                lowlink[v] = min(lowlink[v], index[w])
     if lowlink[v] == index[v]:
-        scc = []
+        scc = List([-1.0])
         w = None
         while v != w:
             w = S.pop()
@@ -40,7 +45,11 @@ def visit(v, index, lowlink, S, S_set, ret, graph):
         ret.append(scc)
 
 def construct_graph(df):
-    graph = defaultdict(set)
+    # graph = defaultdict(set)
+    graph = Dict.empty(
+        key_type=types.float64,
+        value_type=types.float64[:]
+    )
     unique_nodes = set()
     counter = 0
     NA_counter = 0
@@ -54,20 +63,29 @@ def construct_graph(df):
             v = int(v)
             unique_nodes.add(v)
             NA_counter += 1
-            graph[v].add(v)
+            # graph[v].add(v)
+            if v not in graph:
+                graph[v] = np.array([], dtype='f8')
+            graph[v] = np.concatenate((graph[v], np.array([v])))
         # u is a miner address
         elif not pd.isna(u) and pd.isna(v):
             u = int(u)
             unique_nodes.add(u)
             NA_counter += 1
-            graph[u].add(u)
+            # graph[u].add(u)
+            if u not in graph:
+                graph[u] = np.array([], dtype='f8')
+            graph[u] = np.concatenate((graph[u], np.array([u])))
         # both addresses are valid
         else:
             u = int(u)
             v = int(v)
             unique_nodes.add(u)
             unique_nodes.add(v)
-            graph[u].add(v)
+            # graph[u].add(v)
+            if u not in graph:
+                graph[u] = np.array([], dtype='f8')
+            graph[u] = np.concatenate((graph[u], np.array([v])))
     graph_construction_end = time.time()
     print(f"Took {graph_construction_end - graph_construction_start} seconds to construct graph.")
     return graph, unique_nodes, NA_counter
