@@ -10,6 +10,7 @@ import numpy as np
 
 SENTINEL = -1.0
 SMALL_VALUE = 0.01
+BIG_VALUE = 1E3
 
 @njit
 def tarjan(graph):
@@ -31,6 +32,7 @@ def visit(v, index, lowlink, S, S_set, ret, graph):
     lowlink[v] = index[v]
     S.append(v)
     S_set.add(v)
+    outer_counter = 0
     if v in graph:
         for w in graph[v]:
             if w not in index:
@@ -41,11 +43,18 @@ def visit(v, index, lowlink, S, S_set, ret, graph):
     if lowlink[v] == index[v]:
         scc = List([SENTINEL])
         w = None
+        counter = 0
         while v != w:
+            print("len(S): ", len(S))
             w = S.pop()
             scc.append(w)
             S_set.remove(w)
+            if counter > BIG_VALUE:
+                assert False, "infinite loop in tarjans";
+            counter += 1
+        outer_counter += 1
         ret.append(scc)
+        print("len(ret): ", len(ret))
 
 def construct_graph(df):
     # graph = defaultdict(set)
@@ -137,7 +146,7 @@ if __name__ == '__main__':
     start = time.time()
     print("Starting...")
     print("Loading input file...")
-    df = pd.read_parquet("adj_list_dummy_2.parquet", columns=["addr_id1", "addr_id2"] , engine='pyarrow', dtype_backend='pyarrow')
+    df = pd.read_parquet("early_adj_v2.parquet", columns=["addr_id1", "addr_id2"] , engine='pyarrow', dtype_backend='pyarrow')
     print("Finished loading input file.")
 
     output_file = "output.txt"
@@ -172,6 +181,7 @@ if __name__ == '__main__':
     print("**** END ****\n\n")
 
         
+
 
 
 
