@@ -101,12 +101,20 @@ def write_to_file(output_path, unique_nodes, sccs):
         print("Writing SCCs to file...")
         # Output the SCCs with more than 1 member
         counter = 0
-        
+        batch_size = 1_000_000
+        buffer = []
         for scc in sccs:
-            if counter % 1_000_000 == 0:
-                print("counter: ", counter)
-            output_file.write(f"Members of SCC {counter}: {scc}\n")
+            # ******** LOGGING *********
+            if counter % 10_000_000 == 0:
+                print(f"counter: {counter} out of {len(scc)}. {round(counter / len(scc), 5)}% complete.")
+            # **************************
+            buffer.append(f"Members of SCC {counter}: {scc}\n")
+            if counter % batch_size == 0:
+                output_file.write(f"Members of SCC {counter}: {scc}\n")
+                buffer = []
             counter += 1
+        if buffer:
+            output_file.writelines(buffer)
         io_end = time.time()
         print(f"Took {io_end - io_start} seconds to write SCCs to file.")
         print("Finished writing SCCs to file.")
@@ -151,7 +159,6 @@ if __name__ == '__main__':
     # **********************************
 
     # *** Writing output to file ***
-    print(f"Output file: {output_path}")
     io_start = time.time()
     write_to_file(output_path, unique_nodes, sccs)
     end = time.time()
