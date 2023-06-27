@@ -41,25 +41,21 @@ def consolidate_sccs(df, text_sccs):
             df.loc[idx, ['weight']] = weight
       # drop all the rows that are NA
       mask = df['addr_id1'].notna() | df['addr_id2'].notna()
-      df = df[mask]
+      mask = ~(df['addr_id1'].notna() | df['addr_id2'].notna())
+      df.drop(df[mask].index, inplace=True)
       mask = df['addr_id1'].isna()
       df.loc[mask, 'addr_id1'] = df.loc[mask, 'addr_id2']
-      df = df.reset_index(drop=True)
+      # df = df.reset_index(drop=True)
 
     return None
 
-def compute_lsc_component(graph):
+def compute_lsc_component(df):
   '''
   This function takes the modified graph with SCCs replaced and identifies the Largest Strongly Connected (LSC) component, 
   which is the component with the largest number of original nodes. It returns the LSC component.
   ''' 
-  # Count the number of original nodes for each SCC
-  scc_counts = graph.groupby('addr_id1').size().to_dict()
-  
-  # Find the SCC with the largest count
-  lsc_component = max(scc_counts, key=scc_counts.get)
-  
-  return lsc_component
+  max_weight_row = df.loc[df['weight'].idxmax()]
+  return max_weight_row['addr_id1']
 
 
 def bfs(graph, start_vertex): 
@@ -224,9 +220,14 @@ def load_sccs(scc_file):
   return sccs
 
 if __name__ == '__main__':
-  df = load_file("adj_list_dummy_2.parquet")
+  df = load_file("adj_list_dummy_3_1.parquet")
+  # print(df)
   sccs = load_sccs("sccs.txt")
-  new_df = consolidate_sccs(df, sccs)
+  consolidate_sccs(df, sccs)
+  print(f"End: {df}")
+
+  lsc_comp = compute_lsc_component(df)
+  print(lsc_comp)
   # print(df)
   # print(new_df)
 
