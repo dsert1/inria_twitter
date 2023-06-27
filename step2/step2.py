@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import ast
 import json
+import matplotlib.pyplot as plt
 
 # def consolidate_sccs(df, text_sccs):
 #     """
@@ -139,7 +140,7 @@ def categorize_vertices(graph, lsc_component, in_component, out_component):
       'DISCONNECTED': disconnected
   }
 
-def create_macrostructure(graph, scc_list): 
+def create_macrostructure(graph, sccs): 
   '''
   This function serves as the main function that ties all the modular functions together. 
   It takes the original graph and the list of SCCs as input. 
@@ -150,16 +151,17 @@ def create_macrostructure(graph, scc_list):
   # modified_df = consolidate_sccs(df, scc_list)
   
   # Step 2: Identify the Largest Strongly Connected (LSC) component
-  lsc_component = compute_lsc_component(df)
+  lsc_component = compute_lsc_component(sccs)
   
   # Step 3: Perform Breadth-First Search (BFS) from LSC component
   out_component = bfs(df, lsc_component)
   
   # Step 4: Perform Reverse BFS from LSC component
-  in_component = reverse_bfs(df, lsc_component)
+  in_component = bfs(df, lsc_component, forward=False)
   
   # Step 5: Categorize vertices into different categories
   categorized_vertices = categorize_vertices(df, lsc_component, in_component, out_component)
+  print(categorized_vertices)
   
   # Step 6: Create the macrostructure graph
   macrostructure = nx.DiGraph()
@@ -171,12 +173,14 @@ def create_macrostructure(graph, scc_list):
           if category == 'LEVELS':
               continue  # Skip adding edges within the LSC component
           if category in ('IN-TENDRILS', 'BRIDGES', 'OTHER'):
-              edges = modified_df.loc[modified_df['addr_id1'] == vertex, 'addr_id2'].values
+              edges = df.loc[df['addr_id1'] == vertex, 'addr_id2'].values
               macrostructure.add_edges_from([(vertex, edge) for edge in edges])
           if category in ('OUT-TENDRILS', 'BRIDGES', 'OTHER'):
-              edges = modified_df.loc[modified_df['addr_id2'] == vertex, 'addr_id1'].values
+              edges = df.loc[df['addr_id2'] == vertex, 'addr_id1'].values
               macrostructure.add_edges_from([(edge, vertex) for edge in edges])
   
+  nx.draw(macrostructure, with_labels=True)
+  plt.show()
   return macrostructure
 
 def load_file(parquet_file):
@@ -212,15 +216,18 @@ if __name__ == '__main__':
   # consolidate_sccs(sccs)
   # print(f"End: {df}")
 
-  lsc_comp = compute_lsc_component(sccs)
-  print(lsc_comp)
-  # # print(df)
-  # # print(new_df)
-  in_comp = bfs(df, lsc_comp)
-  out_comp = bfs(df, lsc_comp, forward=False)
+  # lsc_comp = compute_lsc_component(sccs)
+  # print(lsc_comp)
+  # # # print(df)
+  # # # print(new_df)
+  # in_comp = bfs(df, lsc_comp)
+  # out_comp = bfs(df, lsc_comp, forward=False)
   
-  categories = categorize_vertices(df, lsc_comp, in_comp, out_comp)
-  print(f"Categories: {categories}")
+  # categories = categorize_vertices(df, lsc_comp, in_comp, out_comp)
+  # print(f"Categories: {categories}")
 
   # print(reverse_bfs)
   # print(bfs_)
+
+  macrostructure = create_macrostructure(df, sccs)
+  print(macrostructure)
