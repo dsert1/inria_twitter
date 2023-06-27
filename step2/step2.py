@@ -1,28 +1,52 @@
 from collections import deque
 # from sagemath.graphs.digraph import DiGraph
 import networkx as nx
+import time
+import pandas as pd
+import numpy as np
+import ast
 
-def replace_scc_with_vertex(graph, scc): 
-  '''
-  This function takes the original graph and an SCC as input. It replaces the SCC with a single vertex in the graph. 
-  The multiple arcs between any two vertices within the SCC 
-  are replaced with a weighted arc whose weight is equal to the number of arcs it replaces.
-  '''
-  # Create a new vertex to replace the SCC
-  new_vertex = tuple(scc)  # Convert the SCC list to a tuple for hashability
-  
-  # Remove edges within the SCC from the DataFrame
-  df = df[~((df['addr_id1'].isin(scc)) & (df['addr_id2'].isin(scc)))]
-  
-  # Remove edges incident to SCC vertices from the DataFrame
-  df = df[~((df['addr_id1'].isin(scc)) | (df['addr_id2'].isin(scc)))]
-  
-  # Add a new row for the new vertex with weighted arcs
-  num_arcs = len(scc) * (len(scc) - 1)
-  new_row = {'addr_id1': new_vertex, 'addr_id2': new_vertex, 'weight': num_arcs}
-  df = df.append(new_row, ignore_index=True)
-  
-  return df
+def consolidate_sccs(df, text_sccs):
+    """
+    Consolidate each strongly connected component into a single vertex.
+    Mutates the dataframe in place.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Dataframe containing the graph edges. Columns: 'addr_id1', 'addr_id2'.
+    sccs : list of lists
+        List of strongly connected components. Each component is represented by a list of vertex IDs.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Updated DataFrame where each SCC is consolidated into a single vertex.
+    """
+    df['weight'] = 1
+    for line in text_sccs:
+      line = "".join(line)
+      sccs = ast.literal_eval(line)
+      for scc in sccs:
+        # get the minimum id in the scc
+        min_id = min(scc)
+        # for every id that is not the minimum id, mark that row in the dataframe as NA
+        for id in scc:
+          weight = 1
+          if id != min_id:
+            idx = df.loc[(df['addr_id1'] == id) | (df['addr_id2'] == min_id)].index[0]
+            df.loc[idx, ['addr_id1', 'addr_id2']] = pd.NA
+            weight += 1
+            idx = df.loc[(df['addr_id1'] == min_id) | (df['addr_id2'] == id)].index[0]
+            df.loc[idx, ['weight']] = weight
+      # drop all the rows that are NA
+      mask = df['addr_id1'].notna() | df['addr_id2'].notna()
+      df = df[mask]
+      mask = df['addr_id1'].isna()
+      df.loc[mask, 'addr_id1'] = df.loc[mask, 'addr_id2']
+      df = df.reset_index(drop=True)
+
+    return None
 
 def compute_lsc_component(graph):
   '''
@@ -172,3 +196,38 @@ def create_macrostructure(graph, scc_list):
               macrostructure.add_edges_from([(edge, vertex) for edge in edges])
   
   return macrostructure
+
+def load_file(parquet_file):
+  start = time.time()
+  with open("log.txt", "w+") as log_f:
+    log_f.write("Reading parquet...")
+    log_f.flush()
+  # os.chdir("/Users/dsert/Documents/Documents - Deniz's Macbook/MIT Semesters/Summer 2023/Inria/inria_twitter")
+    df = pd.read_parquet(parquet_file, columns=["addr_id1", "addr_id2"] , engine='pyarrow')
+    log_f.write("Finished reading!\n\n*********\n\n")
+    log_f.flush()
+
+    finish = time.time()
+    log_f.write(f"Reading file took: {finish - start} seconds.\n")
+  log_f.close()
+  return df
+
+def load_sccs(scc_file):
+  sccs = []
+  with open(scc_file, "r") as f, open("log.txt", "w+") as log_f:
+    log_f.write("Reading sccs...")
+    log_f.flush()
+    for line in f:
+      sccs.append(line.split())
+    log_f.write("Finished reading!\n\n*********\n\n")
+    log_f.flush()
+  return sccs
+
+if __name__ == '__main__':
+  df = load_file("adj_list_dummy_2.parquet")
+  sccs = load_sccs("sccs.txt")
+  new_df = consolidate_sccs(df, sccs)
+  # print(df)
+  # print(new_df)
+
+
